@@ -4,9 +4,9 @@ import sys
 import datetime
 
 
-def qclose(conn, cursor):
-    if conn is not None:
-        conn.close()
+def qclose(connection, cursor):
+    if connection is not None:
+        connection.close()
     if cursor is not None:
         cursor.close()
 
@@ -26,7 +26,7 @@ class Database:
                 host="0.0.0.0",
                 port=3306,
                 user="root",
-                password="bitola",
+                password="your_password",
                 database="test1",
                 pool_name="test_pool",
                 pool_size=5,
@@ -46,24 +46,25 @@ class Database:
                 connection.autocommit = False
                 cursor = connection.cursor()
                 cursor.execute(query)
-        except mariadb.Error as e:
-            print(f" error: {e}")
+        except mariadb.IntegrityError:
+            connection.rollback()
+            return False, "integrity"
+        except mariadb.Error:
             connection.rollback()
             cursor.close()
             connection.close()
+            return False, "connection"
 
         connection.commit()
         return connection, cursor
 
-    def add_child_friendly(self, status):
-        conn, result = self.execute(
-            "INSERT INTO child_friendly(status)"
-            "SELECT status "
-            "FROM child_friendly "
-            ""
-            f"VALUES('{status}');"
-        )
-        qclose(conn, result)
+    # def add_child_friendly(self, status):
+    #     status, result = self.execute(
+    #         "INSERT INTO child_friendly(status)"
+    #         f"VALUES('{status}');"
+    #     )
+    # if connection is False:
+    #     if result
 
     def debug_child_friendly_table(self):
         conn, result = self.execute(
@@ -94,7 +95,6 @@ class Database:
     #         "is_child_content BOOLEAN);"
     #     )
     #     qclose(conn, result)
-    #
 
     # def video_add(self, item):
     #     conn, result = self.execute(
@@ -131,12 +131,12 @@ class Database:
     #     )
     #     qclose(conn, result)
 
-    def debug_video_table(self):
-        conn, result = self.execute("SELECT * FROM video")
-        if result is not None:
-            for r in result:
-                print(r)
-        qclose(conn, result)
+    # def debug_video_table(self):
+    #     conn, result = self.execute("SELECT * FROM video")
+    #     if result is not None:
+    #         for r in result:
+    #             print(r)
+    #     qclose(conn, result)
 
 
 if __name__ == '__main__':
