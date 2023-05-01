@@ -1,7 +1,6 @@
 import mariadb
 import sys
 
-
 def qclose(conn, cursor):
     if conn is not None:
         conn.close()
@@ -24,7 +23,7 @@ class Database:
                 host="0.0.0.0",
                 port=3306,
                 user="root",
-                password="bitola",
+                password="your_password",
                 database="test1",
                 pool_name="test_pool",
                 pool_size=5,
@@ -61,6 +60,7 @@ class Database:
             "mp4 VARCHAR(255));"
         )
         qclose(conn, result)
+
 
     def video_add(self, video_title, mp4):
         conn, result = self.execute(
@@ -101,5 +101,5 @@ class Database:
 if __name__ == '__main__':
     db = Database().instance()
     db.create_video_table()
-    db.video_add("herbert", "herbert_video.mp4")
+    db.video_add("cooles video", "herbert_video.mp4")
     db.video_show()
