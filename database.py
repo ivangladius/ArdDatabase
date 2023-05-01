@@ -1,6 +1,8 @@
 import mariadb
 import sys
 
+import datetime
+
 
 def qclose(conn, cursor):
     if conn is not None:
@@ -53,52 +55,95 @@ class Database:
         connection.commit()
         return connection, cursor
 
-    def create_video_table(self):
+    def add_child_friendly(self, status):
         conn, result = self.execute(
-            "CREATE TABLE IF NOT EXISTS video("
-            "id INT PRIMARY KEY AUTO_INCREMENT,"
-            "video_title VARCHAR(40),"
-            "mp4 VARCHAR(4096));"
+            "INSERT INTO child_friendly(status)"
+            "SELECT status "
+            "FROM child_friendly "
+            ""
+            f"VALUES('{status}');"
         )
         qclose(conn, result)
 
-    def video_add(self, item):
+    def debug_child_friendly_table(self):
         conn, result = self.execute(
-            "INSERT INTO video(video_title, mp4)"
-            f"VALUES('{item.title}', '{item.video_url}')"
+            "SELECT * FROM child_friendly;"
         )
+        if result is not None:
+            for r in result:
+                print(r)
         qclose(conn, result)
 
-    def video_show(self):
+    # def create_video_table(self):
+    #     conn, result = self.execute(
+    #         "CREATE TABLE IF NOT EXISTS video("
+    #         "id INT PRIMARY KEY AUTO_INCREMENT,"
+    #         "site_url VARCHAR(2083),"
+    #         "video_url VARCHAR(2083),"
+    #         "video_size INT,"
+    #         "thumb_nail VARCHAR(2083),"
+    #         "created DATETIME,"
+    #         "institution VARCHAR(100),"
+    #         "institution_logo VARCHAR(2083),"
+    #         "publisher VARCHAR(100),"
+    #         "title VARCHAR(100),"
+    #         "duration INT,"
+    #         "category VARCHAR(100),"
+    #         "available_from DATETIME,"
+    #         "available_to DATETIME,"
+    #         "is_child_content BOOLEAN);"
+    #     )
+    #     qclose(conn, result)
+    #
+
+    # def video_add(self, item):
+    #     conn, result = self.execute(
+    #         "INSERT INTO video"
+    #         "(site_url,"
+    #         "video_url,"
+    #         "video_size,"
+    #         "thumb_nail,"
+    #         "created,"
+    #         "institution,"
+    #         "institution_logo,"
+    #         "publisher,"
+    #         "title,"
+    #         "duration,"
+    #         "category,"
+    #         "available_from,"
+    #         "available_to,"
+    #         "is_child_content)"
+    #         f"VALUES("
+    #         f"'{item.site_url}',"
+    #         f"'{item.video_url}',"
+    #         f"'{item.video_size}',"
+    #         f"'{item.thumb_nail}',"
+    #         f"'{item.created}',"
+    #         f"'{item.institution}',"
+    #         f"'{item.institution_logo}',"
+    #         f"'{item.publisher}',"
+    #         f"'{item.title}',"
+    #         f"'{item.duration}',"
+    #         f"'{item.category}',"
+    #         f"'{item.available_from}',"
+    #         f"'{item.available_to}',"
+    #         f"'{item.is_child_content}');"
+    #     )
+    #     qclose(conn, result)
+
+    def debug_video_table(self):
         conn, result = self.execute("SELECT * FROM video")
         if result is not None:
             for r in result:
                 print(r)
         qclose(conn, result)
 
-    def add_person(self, name):
-        conn, result = self.execute(f"INSERT INTO person(name) VALUES('{name}')")
-        qclose(conn, result)
-
-    def get_person(self, name):
-        conn, result = self.execute(f"SELECT * FROM person WHERE name LIKE '{name}'")
-        if result is not None:
-            for r in result:
-                print(r)
-        qclose(conn, result)
-
-    def show(self):
-        conn, result = self.execute("SELECT * FROM person;")
-        if result is not None:
-            for r in result:
-                print(f"<{r[0]}, {r[1]}>")
-        else:
-            print("no results")
-
-        qclose(conn, result)
-
 
 if __name__ == '__main__':
     db = Database().instance()
-    db.create_video_table()
-    db.video_show()
+    db.add_child_friendly(0)
+    db.add_child_friendly(0)
+    db.add_child_friendly(0)
+    db.add_child_friendly(1)
+    db.add_child_friendly(1)
+    db.debug_child_friendly_table()
