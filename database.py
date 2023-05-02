@@ -11,6 +11,16 @@ def qclose(connection, cursor):
         cursor.close()
 
 
+def query_abort(connection, cursor, message):
+    if connection is not None:
+        connection.rollback()
+        connection.close()
+    elif cursor is not None:
+        cursor.close()
+
+    return False, message
+
+
 class Database:
     def __init__(self):
         self.pool = None
@@ -47,33 +57,59 @@ class Database:
                 cursor = connection.cursor()
                 cursor.execute(query)
         except mariadb.IntegrityError:
-            connection.rollback()
-            return False, "integrity"
+            print("Integrity Error")
+            sys.exit(1)
+        #            query_abort(connection, cursor, "integrity")
         except mariadb.Error:
-            connection.rollback()
-            cursor.close()
-            connection.close()
-            return False, "connection"
+            print("DB Error")
+            sys.exit(1)
+        #            query_abort(connection, cursor, "connection")
 
-        connection.commit()
-        return connection, cursor
+        if connection is not None:
+            connection.commit()
+            return connection, cursor
+        else:
+            return False, "unknown error"
 
-    # def add_child_friendly(self, status):
-    #     status, result = self.execute(
-    #         "INSERT INTO child_friendly(status)"
-    #         f"VALUES('{status}');"
-    #     )
-    # if connection is False:
-    #     if result
+    def create_child_friendly_(self):
+
+        successful, result = self.execute(
+            "DROP TABLE child_friendly;"
+        )
+
+        if not successful:
+            print("could not drop table")
+
+        successful, result = self.execute(
+            "CREATE TABLE child_friendly("
+            "id INT PRIMARY KEY AUTO_INCREMENT,"
+            "status BOOLEAN,"
+            "UNIQUE(status));"
+        )
+        if not successful:
+            print("could not create table")
+
+        qclose(successful, result)
+
+    def insert_child_friendly(self, status):
+        successful, result = self.execute(
+            "INSERT INTO child_friendly(status)"
+            f"VALUES('{status}');"
+        )
+        if successful:
+            print("successful added row")
+
+        qclose(successful, result)
 
     def debug_child_friendly_table(self):
-        conn, result = self.execute(
+        successful, result = self.execute(
             "SELECT * FROM child_friendly;"
         )
         if result is not None:
             for r in result:
                 print(r)
-        qclose(conn, result)
+
+        qclose(successful, result)
 
     # def create_video_table(self):
     #     conn, result = self.execute(
@@ -141,9 +177,6 @@ class Database:
 
 if __name__ == '__main__':
     db = Database().instance()
-    db.add_child_friendly(0)
-    db.add_child_friendly(0)
-    db.add_child_friendly(0)
-    db.add_child_friendly(1)
-    db.add_child_friendly(1)
+    db.create_child_friendly_()
+    db.insert_child_friendly(0)
     db.debug_child_friendly_table()
