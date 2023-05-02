@@ -42,7 +42,7 @@ class Database:
                 host="0.0.0.0",
                 port=3306,
                 user="root",
-                password="bitola",
+                password="your_password_here",
                 database="test1",
                 pool_name="test_pool",
                 pool_size=5,
