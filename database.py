@@ -5,18 +5,24 @@ import datetime
 
 
 def qclose(connection, cursor):
-    if connection is not None:
-        connection.close()
-    if cursor is not None:
-        cursor.close()
+    try:
+        if connection is not None and connection is not False:
+            connection.close()
+            if cursor is not None:
+                cursor.close()
+    except mariadb.ProgrammingError:
+        pass
 
 
 def query_abort(connection, cursor, message):
-    if connection is not None:
-        connection.rollback()
-        connection.close()
-    elif cursor is not None:
-        cursor.close()
+    try:
+        if connection is not None:
+            connection.rollback()
+            connection.close()
+        elif cursor is not None:
+            cursor.close()
+    except mariadb.ProgrammingError:
+        pass
 
     return False, message
 
@@ -36,7 +42,7 @@ class Database:
                 host="0.0.0.0",
                 port=3306,
                 user="root",
-                password="your_password",
+                password="bitola",
                 database="test1",
                 pool_name="test_pool",
                 pool_size=5,
@@ -53,32 +59,191 @@ class Database:
         try:
             if self.pool is not None:
                 connection = self.pool.get_connection()
-                connection.autocommit = False
-                cursor = connection.cursor()
-                cursor.execute(query)
+                if connection is not None:
+                    connection.autocommit = False
+                    cursor = connection.cursor()
+                    cursor.execute(query)
+                else:
+                    return False, "connection"
+            else:
+                return False, "unknown error"
         except mariadb.IntegrityError:
-            print("Integrity Error")
-            sys.exit(1)
-        #            query_abort(connection, cursor, "integrity")
+            return query_abort(connection, cursor, "integrity")
         except mariadb.Error:
-            print("DB Error")
-            sys.exit(1)
-        #            query_abort(connection, cursor, "connection")
+            return query_abort(connection, cursor, "connection")
 
-        if connection is not None:
+        if connection is not None and connection is not False:
             connection.commit()
             return connection, cursor
         else:
             return False, "unknown error"
 
-    def create_child_friendly_(self):
+    def create_video_table(self):
+
+        successful, result = self.execute(
+            "DROP TABLE video;"
+        )
+
+        if not successful:
+            return False, result
+
+        qclose(successful, result)
+
+        successful, result = self.execute(
+            "CREATE TABLE video("
+            "id INT PRIMARY KEY AUTO_INCREMENT,"
+            "site_url VARCHAR(2083),"
+            "video_url VARCHAR(2083),"
+            "thumb_nail VARCHAR(2083),"
+            "title VARCHAR(100),"
+            "created DATETIME,"
+            "available_from DATETIME,"
+            "available_to DATETIME,"
+            "publisher_id INT,"
+            "institution_id INT,"
+            "child_friendly_id INT,"
+            "FOREIGN KEY (publisher_id) REFERENCES publisher(id),"
+            "FOREIGN KEY (institution_id) REFERENCES institution(id),"
+            "FOREIGN KEY (child_friendly_id) REFERENCES child_friendly(id));"
+        )
+        if not successful:
+            return False, result
+
+        qclose(successful, result)
+
+        return True, "ok"
+
+    def insert_video(self):
+
+
+    def create_institution_table(self):
+        successful, result = self.execute(
+            "DROP TABLE institution;"
+        )
+
+        if not successful:
+            return False, result
+
+        qclose(successful, result)
+
+        successful, result = self.execute(
+            "CREATE TABLE institution("
+            "id INT PRIMARY KEY AUTO_INCREMENT,"
+            "institution_name VARCHAR(100),"
+            "institution_logo VARCHAR(2083),"
+            "UNIQUE(institution_name));"
+        )
+        if not successful:
+            return False, result
+
+        qclose(successful, result)
+
+        return True, "ok"
+
+    def create_publisher_table(self):
+
+        successful, result = self.execute(
+            "DROP TABLE publisher;"
+        )
+
+        if not successful:
+            return False, result
+
+        qclose(successful, result)
+
+        successful, result = self.execute(
+            "CREATE TABLE publisher("
+            "id INT PRIMARY KEY AUTO_INCREMENT,"
+            "publisher_name VARCHAR(100),"
+            "UNIQUE(publisher_name));"
+        )
+        if not successful:
+            return False, result
+
+        qclose(successful, result)
+
+        return True, "ok"
+
+    def insert_institution(self, institution_name, institution_logo):
+
+        successful, result = self.execute(
+            "SELECT * FROM institution "
+            f"WHERE institution_name = '{institution_name}';"
+        )
+        if successful:
+            if result.fetchone() is None:
+                qclose(successful, result)
+                successful, result = self.execute(
+                    f"INSERT INTO institution(institution_name, institution_logo)"
+                    f"VALUES('{institution_name}', '{institution_logo}');"
+                )
+                if not successful:
+                    return False, result
+                qclose(successful, result)
+            else:
+                qclose(successful, result)
+                return False, "exist"
+        else:
+            return False, result
+
+        return True, "ok"
+
+    def debug_institution_table(self):
+
+        successful, result = self.execute(
+            "SELECT * FROM institution;"
+        )
+        if successful:
+            if result is not None:
+                for r in result:
+                    print(r)
+            qclose(successful, result)
+
+    def insert_publisher(self, publisher):
+
+        successful, result = self.execute(
+            "SELECT * FROM publisher "
+            f"WHERE publisher_name = '{publisher}';"
+        )
+        if successful:
+            if result.fetchone() is None:
+                qclose(successful, result)
+                successful, result = self.execute(
+                    f"INSERT INTO publisher(publisher_name)"
+                    f"VALUES('{publisher}');"
+                )
+                if not successful:
+                    return False, result
+                qclose(successful, result)
+            else:
+                qclose(successful, result)
+                return False, "exist"
+        else:
+            return False, result
+
+        return True, "ok"
+
+    def debug_publisher_table(self):
+
+        successful, result = self.execute(
+            "SELECT * FROM publisher;"
+        )
+        if successful:
+            if result is not None:
+                for r in result:
+                    print(r)
+            qclose(successful, result)
+
+    def create_child_friendly_table(self):
 
         successful, result = self.execute(
             "DROP TABLE child_friendly;"
         )
 
         if not successful:
-            print("could not drop table")
+            return False, result
+
+        qclose(successful, result)
 
         successful, result = self.execute(
             "CREATE TABLE child_friendly("
@@ -87,96 +252,51 @@ class Database:
             "UNIQUE(status));"
         )
         if not successful:
-            print("could not create table")
+            return False, result
 
         qclose(successful, result)
+
+        return True, "ok"
 
     def insert_child_friendly(self, status):
+
         successful, result = self.execute(
-            "INSERT INTO child_friendly(status)"
-            f"VALUES('{status}');"
+            "SELECT * FROM child_friendly "
+            f"WHERE status = {status};"
         )
         if successful:
-            print("successful added row")
+            if result.fetchone() is None:
+                qclose(successful, result)
+                successful, result = self.execute(
+                    "INSERT INTO child_friendly(status)"
+                    f"VALUES('{status}');"
+                )
+                if not successful:
+                    return False, result
+                qclose(successful, result)
+            else:
+                qclose(successful, result)
+                return False, "exist"
+        else:
+            return False, result
 
-        qclose(successful, result)
+        return True, "ok"
 
     def debug_child_friendly_table(self):
         successful, result = self.execute(
             "SELECT * FROM child_friendly;"
         )
-        if result is not None:
-            for r in result:
-                print(r)
-
-        qclose(successful, result)
-
-    # def create_video_table(self):
-    #     conn, result = self.execute(
-    #         "CREATE TABLE IF NOT EXISTS video("
-    #         "id INT PRIMARY KEY AUTO_INCREMENT,"
-    #         "site_url VARCHAR(2083),"
-    #         "video_url VARCHAR(2083),"
-    #         "video_size INT,"
-    #         "thumb_nail VARCHAR(2083),"
-    #         "created DATETIME,"
-    #         "institution VARCHAR(100),"
-    #         "institution_logo VARCHAR(2083),"
-    #         "publisher VARCHAR(100),"
-    #         "title VARCHAR(100),"
-    #         "duration INT,"
-    #         "category VARCHAR(100),"
-    #         "available_from DATETIME,"
-    #         "available_to DATETIME,"
-    #         "is_child_content BOOLEAN);"
-    #     )
-    #     qclose(conn, result)
-
-    # def video_add(self, item):
-    #     conn, result = self.execute(
-    #         "INSERT INTO video"
-    #         "(site_url,"
-    #         "video_url,"
-    #         "video_size,"
-    #         "thumb_nail,"
-    #         "created,"
-    #         "institution,"
-    #         "institution_logo,"
-    #         "publisher,"
-    #         "title,"
-    #         "duration,"
-    #         "category,"
-    #         "available_from,"
-    #         "available_to,"
-    #         "is_child_content)"
-    #         f"VALUES("
-    #         f"'{item.site_url}',"
-    #         f"'{item.video_url}',"
-    #         f"'{item.video_size}',"
-    #         f"'{item.thumb_nail}',"
-    #         f"'{item.created}',"
-    #         f"'{item.institution}',"
-    #         f"'{item.institution_logo}',"
-    #         f"'{item.publisher}',"
-    #         f"'{item.title}',"
-    #         f"'{item.duration}',"
-    #         f"'{item.category}',"
-    #         f"'{item.available_from}',"
-    #         f"'{item.available_to}',"
-    #         f"'{item.is_child_content}');"
-    #     )
-    #     qclose(conn, result)
-
-    # def debug_video_table(self):
-    #     conn, result = self.execute("SELECT * FROM video")
-    #     if result is not None:
-    #         for r in result:
-    #             print(r)
-    #     qclose(conn, result)
+        if successful:
+            if result is not None:
+                for r in result:
+                    print(r)
+            qclose(successful, result)
 
 
 if __name__ == '__main__':
     db = Database().instance()
-    db.create_child_friendly_()
-    db.insert_child_friendly(0)
-    db.debug_child_friendly_table()
+    db.create_child_friendly_table()
+    db.create_publisher_table()
+    db.create_institution_table()
+    db.create_video_table()
+
