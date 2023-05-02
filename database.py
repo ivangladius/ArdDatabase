@@ -113,8 +113,61 @@ class Database:
 
         return True, "ok"
 
-    def insert_video(self):
+    def insert_video(self, video_item):
 
+        successful, result = self.execute(
+            "SELECT * FROM video "
+            f"WHERE title = '{video_item.title}';"
+        )
+        if successful:
+            if result.fetchone() is None:
+                print("fetchone")
+                successful, result = self.execute(
+                    "SELECT id FROM publisher "
+                    f"WHERE publisher_name = '{video_item.publisher}'"
+                )
+                if successful:
+                    if result is not None:
+                        print("fetch two")
+                        publisher_id = result.fetchone()
+                        print(f"publisher_id: {publisher_id[0]}")
+                        sys.exit(1)
+
+                qclose(successful, result)
+                successful, result = self.execute(
+                    "INSERT INTO video("
+                    "site_url,"
+                    "video_url,"
+                    "thumb_nail,"
+                    "title,"
+                    "created,"
+                    "available_from,"
+                    "available_to,"
+                    "publisher_id,"
+                    "institution_id,"
+                    "child_friendly_id)"
+                    f"VALUES("
+                    f"'{video_item.site_url}',"
+                    f"'{video_item.video_url}',"
+                    f"'{video_item.thumb_nail}',"
+                    f"'{video_item.title}',"
+                    f"'{video_item.created}',"
+                    f"'{video_item.available_from}',"
+                    f"'{video_item.available_to}',"
+                    f"'{publisher_id}',"
+                    f"'{institution_id}',"
+                    f"'{child_friendly_id}');"
+                )
+                if not successful:
+                    return False, result
+                qclose(successful, result)
+            else:
+                qclose(successful, result)
+                return False, "exist"
+        else:
+            return False, result
+
+        return True, "ok"
 
     def create_institution_table(self):
         successful, result = self.execute(
@@ -293,10 +346,22 @@ class Database:
             qclose(successful, result)
 
 
+class Publisher:
+    def __init__(self, publisher, title):
+        self.publisher = publisher
+        self.title = title
+
+
 if __name__ == '__main__':
     db = Database().instance()
-    db.create_child_friendly_table()
     db.create_publisher_table()
-    db.create_institution_table()
-    db.create_video_table()
+    #  ignore duplicates
+    db.insert_publisher("ZDF")
+    db.insert_publisher("ZDF")
+    db.insert_publisher("ZDF")
+    db.insert_publisher("ARD")
+    db.insert_publisher("ARD")
+    db.insert_publisher("KiKA")
+    db.debug_publisher_table()
+
 

@@ -38,6 +38,7 @@ CREATE TABLE child_friendly(
 SELECT * FROM child_friendly;
 SELECT * FROM institution;
 SELECT * FROM video;
+SELECT * FROM publisher;
 
 
 DROP TABLE video;
