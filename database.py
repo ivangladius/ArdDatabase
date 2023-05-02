@@ -42,7 +42,7 @@ class Database:
                 host="0.0.0.0",
                 port=3306,
                 user="root",
-                password="your_password_here",
+                password="bitola",
                 database="test1",
                 pool_name="test_pool",
                 pool_size=5,
@@ -115,25 +115,63 @@ class Database:
 
     def insert_video(self, video_item):
 
+        # self.create_child_friendly_table()
+        # self.create_institution_table()
+        # self.create_publisher_table()
+        # self.create_video_table()
+        self.insert_child_friendly(video_item.is_child_friendly)
+        self.insert_institution(video_item.institution, video_item.institution_logo)
+        self.insert_publisher(video_item.publisher)
+        # self.debug_child_friendly_table()
+        # self.debug_institution_table()
+        # self.debug_publisher_table()
+
+        # foreign keys to gather from db -> insert into video entry
+        publisher_id = None
+        institution_id = None
+        child_friendly_id = None
+
         successful, result = self.execute(
             "SELECT * FROM video "
             f"WHERE title = '{video_item.title}';"
         )
         if successful:
+            # add if video title was not already found
             if result.fetchone() is None:
-                print("fetchone")
+                qclose(successful, result)
+                # get id of publisher
                 successful, result = self.execute(
                     "SELECT id FROM publisher "
                     f"WHERE publisher_name = '{video_item.publisher}'"
                 )
                 if successful:
                     if result is not None:
-                        print("fetch two")
                         publisher_id = result.fetchone()
                         print(f"publisher_id: {publisher_id[0]}")
-                        sys.exit(1)
+                    qclose(successful, result)
 
-                qclose(successful, result)
+                # get id of institution
+                successful, result = self.execute(
+                    "SELECT id FROM institution "
+                    f"WHERE institution_name = '{video_item.institution}'"
+                )
+                if successful:
+                    if result is not None:
+                        institution_id = result.fetchone()
+                        print(f"institution_id: {institution_id[0]}")
+                    qclose(successful, result)
+
+                # get id of child_friendly
+                successful, result = self.execute(
+                    "SELECT id FROM child_friendly "
+                    f"WHERE status = {video_item.is_child_friendly}"
+                )
+                if successful:
+                    if result is not None:
+                        child_friendly_id = result.fetchone()
+                        print(f"child_friendly_id: {child_friendly_id[0]}")
+                    qclose(successful, result)
+
                 successful, result = self.execute(
                     "INSERT INTO video("
                     "site_url,"
@@ -154,9 +192,9 @@ class Database:
                     f"'{video_item.created}',"
                     f"'{video_item.available_from}',"
                     f"'{video_item.available_to}',"
-                    f"'{publisher_id}',"
-                    f"'{institution_id}',"
-                    f"'{child_friendly_id}');"
+                    f"{publisher_id[0]}," # id
+                    f"{institution_id[0]}," # id
+                    f"{child_friendly_id[0]});" # id
                 )
                 if not successful:
                     return False, result
@@ -167,7 +205,21 @@ class Database:
         else:
             return False, result
 
+        self.debug_video_table()
+
         return True, "ok"
+
+    def debug_video_table(self):
+
+        successful, result = self.execute(
+            "SELECT * FROM video;"
+        )
+        if successful:
+            if result is not None:
+                print("video:")
+                for r in result:
+                    print(r)
+            qclose(successful, result)
 
     def create_institution_table(self):
         successful, result = self.execute(
@@ -248,6 +300,7 @@ class Database:
         )
         if successful:
             if result is not None:
+                print("institution:")
                 for r in result:
                     print(r)
             qclose(successful, result)
@@ -283,6 +336,7 @@ class Database:
         )
         if successful:
             if result is not None:
+                print("publisher:")
                 for r in result:
                     print(r)
             qclose(successful, result)
@@ -322,7 +376,7 @@ class Database:
                 qclose(successful, result)
                 successful, result = self.execute(
                     "INSERT INTO child_friendly(status)"
-                    f"VALUES('{status}');"
+                    f"VALUES({status});"  # FIXME
                 )
                 if not successful:
                     return False, result
@@ -341,27 +395,20 @@ class Database:
         )
         if successful:
             if result is not None:
+                print("child_friendly:")
                 for r in result:
                     print(r)
             qclose(successful, result)
 
-
-class Publisher:
-    def __init__(self, publisher, title):
-        self.publisher = publisher
-        self.title = title
-
-
-if __name__ == '__main__':
-    db = Database().instance()
-    db.create_publisher_table()
-    #  ignore duplicates
-    db.insert_publisher("ZDF")
-    db.insert_publisher("ZDF")
-    db.insert_publisher("ZDF")
-    db.insert_publisher("ARD")
-    db.insert_publisher("ARD")
-    db.insert_publisher("KiKA")
-    db.debug_publisher_table()
-
-
+#
+# if __name__ == '__main__':
+#     db = Database().instance()
+#     db.create_publisher_table()
+#     #  ignore duplicates
+#     db.insert_publisher("ZDF")
+#     db.insert_publisher("ZDF")
+#     db.insert_publisher("ZDF")
+#     db.insert_publisher("ARD")
+#     db.insert_publisher("ARD")
+#     db.insert_publisher("KiKA")
+#     db.debug_publisher_table()
