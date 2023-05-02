@@ -3,6 +3,8 @@ import sys
 
 import datetime
 
+from items import *
+
 
 def qclose(connection, cursor):
     try:
@@ -77,6 +79,48 @@ class Database:
             return connection, cursor
         else:
             return False, "unknown error"
+
+    def update_database(self, items):
+        for item in items:
+            successful, result = self.execute(
+                "SELECT * FROM video "
+                f"WHERE title = '{item.title}'"
+            )
+            if successful:
+                if result is not None:
+                    row = result.fetchone()
+                    if row is not None:
+                        print(f"removing: {row[4]}")
+                        qclose(successful, result)
+
+                        successful, result = self.execute(
+                            "DELETE FROM video "
+                            f"WHERE title = '{item.title}';"
+                        )
+                        if not successful:
+                            return False, "delete"
+                        qclose(successful, result)
+
+                        successful, result = self.execute(
+                            "SELECT * FROM video "
+                            f"WHERE title = '{item.title}'"
+                        )
+                        if successful:
+                            if result is not None:
+                                content = result.fetchone()
+                                if content is None:
+                                    print("removing successful!")
+                                    qclose(successful, result)
+                                else:
+                                    qclose(successful, result)
+                                    return False, "delete"
+                    else:
+                        return False, "delete"
+
+                qclose(successful, result)
+                return True, "ok"
+
+        return False, "unknown error"
 
     def create_video_table(self):
 
@@ -192,9 +236,9 @@ class Database:
                     f"'{video_item.created}',"
                     f"'{video_item.available_from}',"
                     f"'{video_item.available_to}',"
-                    f"{publisher_id[0]}," # id
-                    f"{institution_id[0]}," # id
-                    f"{child_friendly_id[0]});" # id
+                    f"{publisher_id[0]},"  # id
+                    f"{institution_id[0]},"  # id
+                    f"{child_friendly_id[0]});"  # id
                 )
                 if not successful:
                     return False, result
