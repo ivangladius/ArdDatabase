@@ -44,7 +44,7 @@ class Database:
                 host="0.0.0.0",
                 port=3306,
                 user="root",
-                password="bitola",
+                password="your_password_here",
                 database="test1",
                 pool_name="test_pool",
                 pool_size=5,
@@ -81,18 +81,22 @@ class Database:
             return False, "unknown error"
 
     def init_tables(self):
-        tables = ["video", "publisher", "institution", "child_friendly"]
+        tables = ["video_keywords", "video", "keywords", "publisher", "institution", "child_friendly"]
         for table in tables:
             successful, result = self.execute(
                 f"DROP TABLE IF EXISTS {table};"
             )
             if successful:
                 qclose(successful, result)
+            else:
+                print("could not drop table ", table)
 
+        self.create_keywords_table()
         self.create_child_friendly_table()
         self.create_institution_table()
         self.create_publisher_table()
         self.create_video_table()
+        self.create_video_keywords_table()
 
         return True, "ok"
 
@@ -227,7 +231,10 @@ class Database:
             "CREATE TABLE video_keywords("
             "id INT PRIMARY KEY AUTO_INCREMENT,"
             "video_id INT,"
-            "keyword_id INT);"
+            "keyword_id INT,"
+            "FOREIGN KEY (video_id) REFERENCES video(id),"
+            "FOREIGN KEY (keyword_id) REFERENCES keywords(id)"
+            ");"
         )
         if not successful:
             return False, result
@@ -241,12 +248,14 @@ class Database:
         self.insert_child_friendly(video_item.is_child_friendly)
         self.insert_institution(video_item.institution, video_item.institution_logo)
         self.insert_publisher(video_item.publisher)
+        for keyword in video_item.keywords:
+            if keyword is not None:
+                self.insert_keyword(keyword)
 
         # foreign keys to gather from db -> insert into video entry
         publisher_id = None
         institution_id = None
         child_friendly_id = None
-        keywords_id = None
 
         successful, result = self.execute(
             "SELECT * FROM video "
@@ -264,7 +273,7 @@ class Database:
                 if successful:
                     if result is not None:
                         publisher_id = result.fetchone()
-                        print(f"publisher_id: {publisher_id[0]}")
+                        # print(f"publisher_id: {publisher_id[0]}")
                     qclose(successful, result)
 
                 # get id of institution
@@ -275,7 +284,7 @@ class Database:
                 if successful:
                     if result is not None:
                         institution_id = result.fetchone()
-                        print(f"institution_id: {institution_id[0]}")
+                        # print(f"institution_id: {institution_id[0]}")
                     qclose(successful, result)
 
                 # get id of child_friendly
@@ -286,7 +295,7 @@ class Database:
                 if successful:
                     if result is not None:
                         child_friendly_id = result.fetchone()
-                        print(f"child_friendly_id: {child_friendly_id[0]}")
+                        # print(f"child_friendly_id: {child_friendly_id[0]}")
                     qclose(successful, result)
 
                 successful, result = self.execute(
@@ -316,6 +325,21 @@ class Database:
                 if not successful:
                     return False, result
                 qclose(successful, result)
+
+                # get video_id to insert into video_keywords table
+                successful, result = self.execute(
+                    "SELECT id from video "
+                    f"WHERE title = '{video_item.title}';"
+                )
+                if successful:
+                    if result is not None:
+                        content = result.fetchone()
+                        qclose(successful, result)
+                        if content is not None:
+                            self.insert_video_keywords(content[0], video_item.keywords)  # content[0] -> video_id
+                    else:
+                        qclose(successful, result)
+
             else:
                 qclose(successful, result)
                 return False, "exist"
@@ -323,6 +347,30 @@ class Database:
             return False, result
 
         return True, "ok"
+
+    def insert_video_keywords(self, video_id, keywords):
+
+        for keyword in keywords:
+            if keyword is not None:
+                successful, result = self.execute(
+                    "SELECT id FROM keywords "
+                    f"WHERE keyword = '{keyword}';"
+                )
+                if successful:
+                    if result is not None:
+                        content = result.fetchone()
+                        qclose(successful, result)
+                        if content is not None:
+                            keyword_id = content[0]
+                            successful, result = self.execute(
+                                "INSERT INTO video_keywords(video_id, keyword_id) "
+                                f"VALUES('{video_id}', '{keyword_id}');"
+                            )
+                            if successful:
+                                qclose(successful, result)
+
+                    else:
+                        qclose(successful, result)
 
     def insert_keyword(self, keyword):
 
@@ -480,7 +528,6 @@ class Database:
             qclose(successful, result)
 
 
-if __name__ == '__main__':
-    db = Database().instance()
-    db.create_video_keywords_table()
-
+# if __name__ == '__main__':
+#     db = Database().instance()
+#     db.create_video_keywords_table()
