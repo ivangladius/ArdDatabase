@@ -80,6 +80,22 @@ class Database:
         else:
             return False, "unknown error"
 
+    def init_tables(self):
+        tables = ["video", "publisher", "institution", "child_friendly"]
+        for table in tables:
+            successful, result = self.execute(
+                f"DROP TABLE IF EXISTS {table};"
+            )
+            if successful:
+                qclose(successful, result)
+
+        self.create_child_friendly_table()
+        self.create_institution_table()
+        self.create_publisher_table()
+        self.create_video_table()
+
+        return True, "ok"
+
     def update_database(self, items):
         for item in items:
             successful, result = self.execute(
@@ -148,23 +164,89 @@ class Database:
 
         return True, "ok"
 
+    def create_keywords_table(self):
+
+        successful, result = self.execute(
+            "CREATE TABLE IF NOT EXISTS keywords("
+            "id INT PRIMARY KEY AUTO_INCREMENT,"
+            "keyword VARCHAR(50));"
+        )
+        if not successful:
+            return False, result
+
+        return True, "ok"
+
+    def create_publisher_table(self):
+
+        successful, result = self.execute(
+            "CREATE TABLE publisher("
+            "id INT PRIMARY KEY AUTO_INCREMENT,"
+            "publisher_name VARCHAR(100),"
+            "UNIQUE(publisher_name));"
+        )
+        if not successful:
+            return False, result
+
+        qclose(successful, result)
+
+        return True, "ok"
+
+    def create_institution_table(self):
+
+        successful, result = self.execute(
+            "CREATE TABLE institution("
+            "id INT PRIMARY KEY AUTO_INCREMENT,"
+            "institution_name VARCHAR(100),"
+            "institution_logo VARCHAR(2083),"
+            "UNIQUE(institution_name));"
+        )
+        if not successful:
+            return False, result
+
+        qclose(successful, result)
+
+        return True, "ok"
+
+    def create_child_friendly_table(self):
+
+        successful, result = self.execute(
+            "CREATE TABLE child_friendly("
+            "id INT PRIMARY KEY AUTO_INCREMENT,"
+            "status BOOLEAN,"
+            "UNIQUE(status));"
+        )
+        if not successful:
+            return False, result
+
+        qclose(successful, result)
+
+        return True, "ok"
+
+    def create_video_keywords_table(self):
+        successful, result = self.execute(
+            "CREATE TABLE video_keywords("
+            "id INT PRIMARY KEY AUTO_INCREMENT,"
+            "video_id INT,"
+            "keyword_id INT);"
+        )
+        if not successful:
+            return False, result
+
+        qclose(successful, result)
+
+        return True, "ok"
+
     def insert_video(self, video_item):
 
-        # self.create_child_friendly_table()
-        # self.create_institution_table()
-        # self.create_publisher_table()
-        # self.create_video_table()
         self.insert_child_friendly(video_item.is_child_friendly)
         self.insert_institution(video_item.institution, video_item.institution_logo)
         self.insert_publisher(video_item.publisher)
-        # self.debug_child_friendly_table()
-        # self.debug_institution_table()
-        # self.debug_publisher_table()
 
         # foreign keys to gather from db -> insert into video entry
         publisher_id = None
         institution_id = None
         child_friendly_id = None
+        keywords_id = None
 
         successful, result = self.execute(
             "SELECT * FROM video "
@@ -240,50 +322,29 @@ class Database:
         else:
             return False, result
 
-        self.debug_video_table()
-
         return True, "ok"
 
-    def debug_video_table(self):
+    def insert_keyword(self, keyword):
 
         successful, result = self.execute(
-            "SELECT * FROM video;"
+            "SELECT * FROM keywords "
+            f"WHERE keyword = '{keyword}';"
         )
         if successful:
-            if result is not None:
-                print("video:")
-                for r in result:
-                    print(r)
-            qclose(successful, result)
-
-    def create_institution_table(self):
-
-        successful, result = self.execute(
-            "CREATE TABLE institution("
-            "id INT PRIMARY KEY AUTO_INCREMENT,"
-            "institution_name VARCHAR(100),"
-            "institution_logo VARCHAR(2083),"
-            "UNIQUE(institution_name));"
-        )
-        if not successful:
+            if result.fetchone() is None:
+                qclose(successful, result)
+                successful, result = self.execute(
+                    f"INSERT INTO keywords(keyword)"
+                    f"VALUES('{keyword}');"
+                )
+                if not successful:
+                    return False, result
+                qclose(successful, result)
+            else:
+                qclose(successful, result)
+                return False, "exist"
+        else:
             return False, result
-
-        qclose(successful, result)
-
-        return True, "ok"
-
-    def create_publisher_table(self):
-
-        successful, result = self.execute(
-            "CREATE TABLE publisher("
-            "id INT PRIMARY KEY AUTO_INCREMENT,"
-            "publisher_name VARCHAR(100),"
-            "UNIQUE(publisher_name));"
-        )
-        if not successful:
-            return False, result
-
-        qclose(successful, result)
 
         return True, "ok"
 
@@ -311,17 +372,29 @@ class Database:
 
         return True, "ok"
 
-    def debug_institution_table(self):
+    def insert_child_friendly(self, status):
 
         successful, result = self.execute(
-            "SELECT * FROM institution;"
+            "SELECT * FROM child_friendly "
+            f"WHERE status = {status};"
         )
         if successful:
-            if result is not None:
-                print("institution:")
-                for r in result:
-                    print(r)
-            qclose(successful, result)
+            if result.fetchone() is None:
+                qclose(successful, result)
+                successful, result = self.execute(
+                    "INSERT INTO child_friendly(status)"
+                    f"VALUES({status});"  # FIXME
+                )
+                if not successful:
+                    return False, result
+                qclose(successful, result)
+            else:
+                qclose(successful, result)
+                return False, "exist"
+        else:
+            return False, result
+
+        return True, "ok"
 
     def insert_publisher(self, publisher):
 
@@ -347,56 +420,17 @@ class Database:
 
         return True, "ok"
 
-    def debug_publisher_table(self):
+    def debug_video_table(self):
 
         successful, result = self.execute(
-            "SELECT * FROM publisher;"
+            "SELECT * FROM video;"
         )
         if successful:
             if result is not None:
-                print("publisher:")
+                print("video:")
                 for r in result:
                     print(r)
             qclose(successful, result)
-
-    def create_child_friendly_table(self):
-
-        successful, result = self.execute(
-            "CREATE TABLE child_friendly("
-            "id INT PRIMARY KEY AUTO_INCREMENT,"
-            "status BOOLEAN,"
-            "UNIQUE(status));"
-        )
-        if not successful:
-            return False, result
-
-        qclose(successful, result)
-
-        return True, "ok"
-
-    def insert_child_friendly(self, status):
-
-        successful, result = self.execute(
-            "SELECT * FROM child_friendly "
-            f"WHERE status = {status};"
-        )
-        if successful:
-            if result.fetchone() is None:
-                qclose(successful, result)
-                successful, result = self.execute(
-                    "INSERT INTO child_friendly(status)"
-                    f"VALUES({status});"  # FIXME
-                )
-                if not successful:
-                    return False, result
-                qclose(successful, result)
-            else:
-                qclose(successful, result)
-                return False, "exist"
-        else:
-            return False, result
-
-        return True, "ok"
 
     def debug_child_friendly_table(self):
         successful, result = self.execute(
@@ -409,29 +443,44 @@ class Database:
                     print(r)
             qclose(successful, result)
 
-    def init_tables(self):
-        tables = ["video", "publisher", "institution", "child_friendly"]
-        for table in tables:
-            successful, result = self.execute(
-                f"DROP TABLE IF EXISTS {table};"
-            )
-            if successful:
-                qclose(successful, result)
+    def debug_institution_table(self):
 
-        self.create_child_friendly_table()
-        self.create_institution_table()
-        self.create_publisher_table()
-        self.create_video_table()
+        successful, result = self.execute(
+            "SELECT * FROM institution;"
+        )
+        if successful:
+            if result is not None:
+                print("institution:")
+                for r in result:
+                    print(r)
+            qclose(successful, result)
 
-#
-# if __name__ == '__main__':
-#     db = Database().instance()
-#     db.create_publisher_table()
-#     #  ignore duplicates
-#     db.insert_publisher("ZDF")
-#     db.insert_publisher("ZDF")
-#     db.insert_publisher("ZDF")
-#     db.insert_publisher("ARD")
-#     db.insert_publisher("ARD")
-#     db.insert_publisher("KiKA")
-#     db.debug_publisher_table()
+    def debug_publisher_table(self):
+
+        successful, result = self.execute(
+            "SELECT * FROM publisher;"
+        )
+        if successful:
+            if result is not None:
+                print("publisher:")
+                for r in result:
+                    print(r)
+            qclose(successful, result)
+
+    def debug_keywords_table(self):
+
+        successful, result = self.execute(
+            "SELECT * FROM keywords;"
+        )
+        if successful:
+            if result is not None:
+                print("keywords:")
+                for r in result:
+                    print(r)
+            qclose(successful, result)
+
+
+if __name__ == '__main__':
+    db = Database().instance()
+    db.create_video_keywords_table()
+
