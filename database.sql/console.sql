@@ -40,6 +40,8 @@ SELECT * FROM institution;
 SELECT * FROM video;
 SELECT * FROM publisher;
 
+TRUNCATE TABLE publisher;
+
 
 DROP TABLE video;
 DROP TABLE publisher;

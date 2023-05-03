@@ -125,15 +125,6 @@ class Database:
     def create_video_table(self):
 
         successful, result = self.execute(
-            "DROP TABLE video;"
-        )
-
-        if not successful:
-            return False, result
-
-        qclose(successful, result)
-
-        successful, result = self.execute(
             "CREATE TABLE video("
             "id INT PRIMARY KEY AUTO_INCREMENT,"
             "site_url VARCHAR(2083),"
@@ -266,14 +257,6 @@ class Database:
             qclose(successful, result)
 
     def create_institution_table(self):
-        successful, result = self.execute(
-            "DROP TABLE institution;"
-        )
-
-        if not successful:
-            return False, result
-
-        qclose(successful, result)
 
         successful, result = self.execute(
             "CREATE TABLE institution("
@@ -290,15 +273,6 @@ class Database:
         return True, "ok"
 
     def create_publisher_table(self):
-
-        successful, result = self.execute(
-            "DROP TABLE publisher;"
-        )
-
-        if not successful:
-            return False, result
-
-        qclose(successful, result)
 
         successful, result = self.execute(
             "CREATE TABLE publisher("
@@ -388,15 +362,6 @@ class Database:
     def create_child_friendly_table(self):
 
         successful, result = self.execute(
-            "DROP TABLE child_friendly;"
-        )
-
-        if not successful:
-            return False, result
-
-        qclose(successful, result)
-
-        successful, result = self.execute(
             "CREATE TABLE child_friendly("
             "id INT PRIMARY KEY AUTO_INCREMENT,"
             "status BOOLEAN,"
@@ -443,6 +408,20 @@ class Database:
                 for r in result:
                     print(r)
             qclose(successful, result)
+
+    def init_tables(self):
+        tables = ["video", "publisher", "institution", "child_friendly"]
+        for table in tables:
+            successful, result = self.execute(
+                f"DROP TABLE IF EXISTS {table};"
+            )
+            if successful:
+                qclose(successful, result)
+
+        self.create_child_friendly_table()
+        self.create_institution_table()
+        self.create_publisher_table()
+        self.create_video_table()
 
 #
 # if __name__ == '__main__':
