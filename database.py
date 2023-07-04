@@ -1,10 +1,11 @@
 import mariadb
 import sys
+import random
 
 import datetime
 
-from items import *
 
+from items import Item
 
 def qclose(connection, cursor):
     try:
@@ -44,8 +45,8 @@ class Database:
                 host="0.0.0.0",
                 port=3306,
                 user="root",
-                password="your_password_here",
-                database="test1",
+                password="bitola",
+                database="mobile_ex",
                 pool_name="test_pool",
                 pool_size=5,
                 pool_validation_interval=250)
@@ -151,6 +152,7 @@ class Database:
             "video_url VARCHAR(2083),"
             "thumb_nail VARCHAR(2083),"
             "title VARCHAR(100),"
+            "duration INT,"
             "created DATETIME,"
             "available_from DATETIME,"
             "available_to DATETIME,"
@@ -304,6 +306,7 @@ class Database:
                     "video_url,"
                     "thumb_nail,"
                     "title,"
+                    "duration,"
                     "created,"
                     "available_from,"
                     "available_to,"
@@ -315,6 +318,7 @@ class Database:
                     f"'{video_item.video_url}',"
                     f"'{video_item.thumb_nail}',"
                     f"'{video_item.title}',"
+                    f"'{video_item.duration}',"
                     f"'{video_item.created}',"
                     f"'{video_item.available_from}',"
                     f"'{video_item.available_to}',"
@@ -468,6 +472,7 @@ class Database:
 
         return True, "ok"
 
+
     def debug_video_table(self):
 
         successful, result = self.execute(
@@ -527,7 +532,153 @@ class Database:
                     print(r)
             qclose(successful, result)
 
+    def get_publisher(self, publisher_id):
+        successful, result = self.execute(
+            "SELECT * FROM publisher "
+            f"WHERE id = {publisher_id};"
+        )
+        if successful:
+            if result is not None:
+                publisher = result.fetchone()
+                if publisher is not None:
+                    qclose(successful, result)
+                    return publisher[1]
+            qclose(successful, result)
 
-# if __name__ == '__main__':
-#     db = Database().instance()
+        return False, "Publisher"
+
+    def get_institution(self, institution_id):
+        successful, result = self.execute(
+            "SELECT * FROM institution "
+            f"WHERE id = {institution_id};"
+        )
+        if successful:
+            if result is not None:
+                institution = result.fetchone()
+                if institution is not None:
+                    qclose(successful, result)
+                    return [institution[1], institution[2]]
+            qclose(successful, result)
+
+        return False, "Institution"
+
+
+    def get_child_friendly(self, child_friendly):
+            successful, result = self.execute(
+                "SELECT * FROM child_friendly "
+                f"WHERE id = {child_friendly};"
+            )
+            if successful:
+                if result is not None:
+                    child_friendly = result.fetchone()
+                    if child_friendly is not None:
+                        qclose(successful, result)
+                        return child_friendly[1]
+                qclose(successful, result)
+
+            return False, "Child_Friendly"
+
+    def get_keywords(self, id):
+        successful, result = self.execute(
+            "SELECT * FROM video_keywords "
+            f"WHERE video_id = {id};"
+        )
+        keyword_ids = []
+        if successful:
+            if result is not None:
+                keywords = result.fetchall()
+                if keywords is not None:
+                    for key in keywords:
+                        keyword_ids.append(key[2])
+            qclose(successful, result)
+
+
+        keywords = []
+
+        #print(keyword_ids)
+        for key in keyword_ids:
+
+            successful, result = self.execute(
+                "SELECT keyword FROM keywords "
+                f"WHERE id = {key}"
+            )
+
+            if successful:
+                if result is not None:
+                    keyword = result.fetchone()
+                    if keyword is not None:
+                        keywords.append(keyword[0])
+                qclose(successful, result)
+
+        return keywords
+
+    def get_video_total_count(self):
+
+        successful, result = self.execute(
+            "SELECT COUNT(*) FROM video;"
+        )
+
+        number_videos = 0
+        if successful:
+            if result is not None:
+                count = result.fetchone()
+                if count is not None:
+                    qclose(successful, result)
+                    number_videos = count[0]
+            qclose(successful, result)
+
+        return number_videos
+
+
+    # get the total number of videos
+    def get_video_by_id(self, id):
+        successful, result = self.execute(
+            "SELECT * FROM video "
+            f"WHERE id = {id};"
+        )
+
+        if successful:
+            if result is not None:
+                row = result.fetchone()
+                if row is not None:
+                    qclose(successful, result)
+                    return row
+
+            qclose(successful, result)
+
+        return None
+
+
+    def get_random_videos(self, n):
+
+        number_videos = self.get_video_total_count()
+
+        # get 'n' random videos
+        items = []
+        index = 0
+        while index < n:
+            rand = random.randint(1,number_videos)
+
+            # video is a set
+            video = self.get_video_by_id(rand)
+            if video is not None:
+                #self.get_keywords(video[0]) # video id
+                keywords = self.get_keywords(video[0]) # video id
+                publisher = self.get_publisher(video[-3]) # publisher id
+                institution, institution_logo = self.get_institution(video[-2]) # institution id
+                child_friendly = self.get_child_friendly(video[-1]) # child_friendly id
+
+                item = Item()
+                item.set_to_item(video, institution, institution_logo,
+                                 publisher, child_friendly, keywords)
+
+                items.append(item)
+                index += 1
+
+
+#if __name__ == '__main__':
+#    db = Database().instance()
+#    db.get_random_videos(20)
+
+
 #     db.create_video_keywords_table()
