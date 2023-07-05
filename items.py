@@ -68,15 +68,15 @@ class Item:
             self.thumb_nail = data[3]
             self.title = data[4]
             self.duration = data[5]
-            self.created = data[6]
-            self.available_from = data[7]
-            self.available_to = data[8]
-#            self.institution_logo = data[6]
+            self.category = data[6]
+            self.created = data[7]
+            self.available_from = data[8]
+            self.available_to = data[9]
+            self.institution_logo = institution_logo
             self.institution = institution
             self.keywords = keywords
             self.publisher = publisher
             self.child_friendly = child_friendly
-#            self.category = data[12]
         else:
             return False
 
