@@ -76,7 +76,7 @@ class Item:
             self.institution = institution
             self.keywords = keywords
             self.publisher = publisher
-            self.child_friendly = child_friendly
+            self.is_child_friendly = child_friendly
         else:
             return False
 
