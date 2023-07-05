@@ -5,7 +5,7 @@ import random
 import datetime
 
 
-import items
+from items import Item
 
 def qclose(connection, cursor):
     try:
