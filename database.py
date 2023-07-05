@@ -688,9 +688,9 @@ class Database:
         return None
 
 
-if __name__ == '__main__':
-    db = Database().instance()
-    db.get_random_videos(3)
+#if __name__ == '__main__':
+#    db = Database().instance()
+#    db.get_random_videos(3)
 
 
 #     db.create_video_keywords_table()
