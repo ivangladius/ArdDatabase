@@ -300,6 +300,12 @@ class Database:
                         # print(f"child_friendly_id: {child_friendly_id[0]}")
                     qclose(successful, result)
 
+                if publisher_id is None or \
+                    institution_id is None or \
+                    child_friendly_id is None:
+                    return False, "insert"
+                    
+
                 successful, result = self.execute(
                     "INSERT INTO video("
                     "site_url,"
@@ -654,31 +660,37 @@ class Database:
         number_videos = self.get_video_total_count()
 
         # get 'n' random videos
-        items = []
-        index = 0
-        while index < n:
-            rand = random.randint(1,number_videos)
+        if number_videos > 0:
+            items = []
+            index = 0
+            while index < n:
+                rand = random.randint(1,number_videos)
 
-            # video is a set
-            video = self.get_video_by_id(rand)
-            if video is not None:
-                #self.get_keywords(video[0]) # video id
-                keywords = self.get_keywords(video[0]) # video id
-                publisher = self.get_publisher(video[-3]) # publisher id
-                institution, institution_logo = self.get_institution(video[-2]) # institution id
-                child_friendly = self.get_child_friendly(video[-1]) # child_friendly id
+                # video is a set
+                video = self.get_video_by_id(rand)
+                if video is not None: 
+                    keywords = self.get_keywords(video[0]) # video id
+                    publisher = self.get_publisher(video[-3]) # publisher id
+                    institution, institution_logo = self.get_institution(video[-2]) # institution id
+                    child_friendly = self.get_child_friendly(video[-1]) # child_friendly id
 
-                item = Item()
-                item.set_to_item(video, institution, institution_logo,
-                                 publisher, child_friendly, keywords)
+                    item = Item()
+                    item.set_to_item(video, institution, institution_logo,
+                                     publisher, child_friendly, keywords)
 
-                items.append(item)
-                index += 1
+                    items.append(item)
+                    index += 1
+
+            for item in items:
+                print(item)
+            return items
+
+        return None
 
 
-#if __name__ == '__main__':
-#    db = Database().instance()
-#    db.get_random_videos(20)
+if __name__ == '__main__':
+    db = Database().instance()
+    db.get_random_videos(3)
 
 
 #     db.create_video_keywords_table()
