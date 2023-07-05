@@ -657,6 +657,41 @@ class Database:
 
         return None
 
+    def resolve_foreign_keys(self, video):
+        key = video[0]
+        keywords = self.get_keywords(key)
+        publisher = self.get_publisher(key)
+        institution, institution_logo = self.get_institution(key)
+        child_friendly = self.get_child_friendly(key)
+        return [keywords, publisher, institution, institution_logo, child_friendly]
+
+    def get_random_videos_category(self, category, n):
+        successful , result = self.execute(
+            "SELECT * FROM video "
+            f"WHERE category LIKE \"%{category}%\""
+        )
+
+        
+        items = []
+        if successful:
+            if result is not None:
+                videos = result.fetchall()
+
+                total_videos = len(videos)
+                for i in range(n):  
+                    rand = random.randint(1, total_videos - 1) 
+                    video = videos[rand] # get random video of the set of all videos
+                    item = Item()
+                    keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
+                    item.set_to_item(video, institution, institution_logo, publisher, child_friendly, keywords)
+                    items.append(item)
+            else:
+                qclose(successful, result)
+                return None
+            qclose(successful, result)
+
+        return items
+
 
     def get_random_videos(self, n):
 
@@ -668,32 +703,24 @@ class Database:
             index = 0
             while index < n:
                 rand = random.randint(1,number_videos)
-
                 # video is a set
                 video = self.get_video_by_id(rand)
                 if video is not None: 
-                    keywords = self.get_keywords(video[0]) # video id
-                    publisher = self.get_publisher(video[-3]) # publisher id
-                    institution, institution_logo = self.get_institution(video[-2]) # institution id
-                    child_friendly = self.get_child_friendly(video[-1]) # child_friendly id
-
+                    keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
                     item = Item()
                     item.set_to_item(video, institution, institution_logo,
                                      publisher, child_friendly, keywords)
-
                     items.append(item)
                     index += 1
 
-            for item in items:
-                print(item)
             return items
 
         return None
 
 
-#if __name__ == '__main__':
-#    db = Database().instance()
-#    db.get_random_videos(3)
+if __name__ == '__main__':
+    db = Database().instance()
+    db.get_random_videos_category("doku", 1)
 
 
 #     db.create_video_keywords_table()
