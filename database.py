@@ -572,20 +572,21 @@ class Database:
         return None, None
 
 
-    def get_child_friendly(self, child_friendly):
-            successful, result = self.execute(
-                "SELECT * FROM child_friendly "
-                f"WHERE id = {child_friendly};"
-            )
-            if successful:
-                if result is not None:
-                    child_friendly = result.fetchone()
-                    if child_friendly is not None:
-                        qclose(successful, result)
-                        return child_friendly[1]
-                qclose(successful, result)
+    def get_child_friendly(self, child_friendly_id):
+        print("$$$ ID : $$$", child_friendly_id)
+        successful, result = self.execute(
+            "SELECT * FROM child_friendly "
+            f"WHERE id = {child_friendly_id};"
+        )
+        if successful:
+            if result is not None:
+                child_friendly = result.fetchone()
+                if child_friendly is not None:
+                    qclose(successful, result)
+                    return child_friendly[1]
+            qclose(successful, result)
 
-            return None
+        return None
 
     def get_keywords(self, id):
         successful, result = self.execute(
@@ -662,10 +663,11 @@ class Database:
 
     def resolve_foreign_keys(self, video):
         key = video[0]
+        child_friendly_id = video[-1]
         keywords = self.get_keywords(key)
         publisher = self.get_publisher(key)
         institution, institution_logo = self.get_institution(key)
-        child_friendly = self.get_child_friendly(key)
+        child_friendly = self.get_child_friendly(child_friendly_id)
         return [keywords, publisher, institution, institution_logo, child_friendly]
 
     def get_random_videos_category(self, category, n):
@@ -688,9 +690,10 @@ class Database:
                         item = Item()
                         keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
                         item.set_to_item(video, institution, institution_logo, publisher, child_friendly, keywords)
+                        print(item)
                         items.append(item)
-                        qclose(successful, result)
-                        return items
+                    qclose(successful, result)
+                    return items
             else:
                 qclose(successful, result)
                 return None
@@ -724,9 +727,9 @@ class Database:
         return None
 
 
-#if __name__ == '__main__':
-#    db = Database().instance()
-#    db.get_random_videos_category("doku", 1)
+if __name__ == '__main__':
+    db = Database().instance()
+    db.get_random_videos_category("doku", 10)
 
 
 #     db.create_video_keywords_table()
