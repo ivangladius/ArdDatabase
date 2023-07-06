@@ -676,21 +676,24 @@ class Database:
         if successful:
             if result is not None:
                 videos = result.fetchall()
+                if videos is not None:
 
-                total_videos = len(videos)
-                for i in range(n):  
-                    rand = random.randint(1, total_videos - 1) 
-                    video = videos[rand] # get random video of the set of all videos
-                    item = Item()
-                    keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
-                    item.set_to_item(video, institution, institution_logo, publisher, child_friendly, keywords)
-                    items.append(item)
+                    total_videos = len(videos)
+                    for i in range(n):  
+                        rand = random.randint(1, total_videos - 1) 
+                        video = videos[rand] # get random video of the set of all videos
+                        item = Item()
+                        keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
+                        item.set_to_item(video, institution, institution_logo, publisher, child_friendly, keywords)
+                        items.append(item)
+                        qclose(successful, result)
+                        return items
             else:
                 qclose(successful, result)
                 return None
             qclose(successful, result)
 
-        return items
+        return None
 
 
     def get_random_videos(self, n):
@@ -718,9 +721,9 @@ class Database:
         return None
 
 
-if __name__ == '__main__':
-    db = Database().instance()
-    db.get_random_videos_category("doku", 1)
+#if __name__ == '__main__':
+#    db = Database().instance()
+#    db.get_random_videos_category("doku", 1)
 
 
 #     db.create_video_keywords_table()
