@@ -17,6 +17,7 @@ class Item:
                  keywords = None,
                  duration = None,
                  category = None,
+                 subcategory = None,
                  available_from = None,
                  available_to = None,
                  is_child_friendly = False
@@ -39,6 +40,7 @@ class Item:
         self.keywords = keywords
         self.duration = duration
         self.category = category
+        self.subcategory = subcategory
 
         # convert to MariaDB TIMESTAMP
 
@@ -69,9 +71,10 @@ class Item:
             self.title = data[4]
             self.duration = data[5]
             self.category = data[6]
-            self.created = data[7]
-            self.available_from = data[8]
-            self.available_to = data[9]
+            self.subcategory = data[7]
+            self.created = data[8]
+            self.available_from = data[9]
+            self.available_to = data[10]
             self.institution_logo = institution_logo
             self.institution = institution
             self.keywords = keywords
@@ -97,6 +100,7 @@ class Item:
                f"keywords: {self.keywords}\n" \
                f"duration: {self.duration}\n" \
                f"category: {self.category}\n" \
+               f"subcategory: {self.subcategory}\n" \
                f"available_from: {self.available_from}\n" \
                f"available_to: {self.available_to}\n" \
                f"is_child_content: {self.is_child_friendly}\n" \

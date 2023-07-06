@@ -154,6 +154,7 @@ class Database:
             "title VARCHAR(100),"
             "duration INT,"
             "category VARCHAR(100),"
+            "subcategory VARCHAR(100),"
             "created DATETIME,"
             "available_from DATETIME,"
             "available_to DATETIME,"
@@ -307,6 +308,7 @@ class Database:
                     return False, "insert"
                     
 
+                print("$$$ INSERTING = ", video_item.subcategory)
                 successful, result = self.execute(
                     "INSERT INTO video("
                     "site_url,"
@@ -315,6 +317,7 @@ class Database:
                     "title,"
                     "duration,"
                     "category,"
+                    "subcategory,"
                     "created,"
                     "available_from,"
                     "available_to,"
@@ -328,6 +331,7 @@ class Database:
                     f"'{video_item.title}',"
                     f"'{video_item.duration}',"
                     f"'{video_item.category}',"
+                    f"'{video_item.subcategory}',"
                     f"'{video_item.created}',"
                     f"'{video_item.available_from}',"
                     f"'{video_item.available_to}',"
@@ -487,12 +491,17 @@ class Database:
         successful, result = self.execute(
             "SELECT * FROM video;"
         )
+        items = []
         if successful:
             if result is not None:
-                print("video:")
                 for r in result:
-                    print(r)
+                    item = Item()
+                    keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(r)
+                    item.set_to_item(r, institution, institution_logo, publisher, child_friendly, keywords)
+                    items.append(item)
             qclose(successful, result)
+        for item in items:
+            print(item)
 
     def debug_child_friendly_table(self):
         successful, result = self.execute(
@@ -728,7 +737,8 @@ class Database:
 
 if __name__ == '__main__':
     db = Database().instance()
-    db.get_random_videos_category("doku", 1000)
+    db.debug_video_table()
+    #db.get_random_videos_category("doku", 1000)
 
 
 #     db.create_video_keywords_table()
