@@ -573,7 +573,7 @@ class Database:
 
 
     def get_child_friendly(self, child_friendly_id):
-        print("$$$ ID : $$$", child_friendly_id)
+#        print("$$$ ID : $$$", child_friendly_id)
         successful, result = self.execute(
             "SELECT * FROM child_friendly "
             f"WHERE id = {child_friendly_id};"
@@ -662,12 +662,11 @@ class Database:
         return None
 
     def resolve_foreign_keys(self, video):
-        key = video[0]
-        child_friendly_id = video[-1]
-        keywords = self.get_keywords(key)
-        publisher = self.get_publisher(key)
-        institution, institution_logo = self.get_institution(key)
-        child_friendly = self.get_child_friendly(child_friendly_id)
+        # sql table indicies
+        keywords = self.get_keywords(video[0])
+        publisher = self.get_publisher(video[-3])
+        institution, institution_logo = self.get_institution(video[-2])
+        child_friendly = self.get_child_friendly(video[-1])
         return [keywords, publisher, institution, institution_logo, child_friendly]
 
     def get_random_videos_category(self, category, n):
@@ -729,7 +728,7 @@ class Database:
 
 if __name__ == '__main__':
     db = Database().instance()
-    db.get_random_videos_category("doku", 10)
+    db.get_random_videos_category("doku", 1000)
 
 
 #     db.create_video_keywords_table()
