@@ -554,7 +554,7 @@ class Database:
                     return publisher[1]
             qclose(successful, result)
 
-        return False, "Publisher"
+        return None
 
     def get_institution(self, institution_id):
         successful, result = self.execute(
@@ -569,7 +569,7 @@ class Database:
                     return [institution[1], institution[2]]
             qclose(successful, result)
 
-        return False, "Institution"
+        return None
 
 
     def get_child_friendly(self, child_friendly):
@@ -585,7 +585,7 @@ class Database:
                         return child_friendly[1]
                 qclose(successful, result)
 
-            return False, "Child_Friendly"
+            return None
 
     def get_keywords(self, id):
         successful, result = self.execute(
@@ -618,6 +618,9 @@ class Database:
                     if keyword is not None:
                         keywords.append(keyword[0])
                 qclose(successful, result)
+
+        if not keywords:
+            return None
 
         return keywords
 
