@@ -569,7 +569,7 @@ class Database:
                     return [institution[1], institution[2]]
             qclose(successful, result)
 
-        return None
+        return None, None
 
 
     def get_child_friendly(self, child_friendly):
