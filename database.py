@@ -693,16 +693,19 @@ class Database:
 
                     total_videos = len(videos)
                     index = 0
-                    while index < total_videos:
-                        rand = random.randint(1, total_videos - 1) 
-                        if rand not in video_numbers:
-                            video = videos[rand] # get random video of the set of all videos
-                            item = Item()
-                            keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
-                            item.set_to_item(video, institution, institution_logo, publisher, child_friendly, keywords)
-                            print(item)
-                            items.append(item)
-                            index += 1
+                    if total_videos > 0:
+                        while index < n:
+                            rand = random.randint(1, total_videos - 1) 
+                            if rand not in video_numbers:
+                                video_numbers.append(rand)
+                                video = videos[rand] # get random video of the set of all videos
+                                item = Item()
+                                keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
+                                item.set_to_item(video, institution, institution_logo, publisher, child_friendly, keywords)
+                                print(item)
+                                items.append(item)
+                                index += 1
+                            print("$$$ LEN: ", total_videos, "$$$")
                 qclose(successful, result)
                 return items
             else:
@@ -726,7 +729,7 @@ class Database:
             while index < n:
                 rand = random.randint(1,number_videos)
                 if rand not in video_numbers:
-                    # video is a set
+                    video_numbers.append(rand)
                     video = self.get_video_by_id(rand)
                     if video is not None: 
                         keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
@@ -743,8 +746,7 @@ class Database:
 
 if __name__ == '__main__':
     db = Database().instance()
-    db.debug_video_table()
-    #db.get_random_videos_category("doku", 1000)
+    db.get_random_videos_category("Serie", 5)
 
 
 #     db.create_video_keywords_table()
