@@ -705,7 +705,6 @@ class Database:
                                 print(item)
                                 items.append(item)
                                 index += 1
-                            print("$$$ LEN: ", total_videos, "$$$")
                 qclose(successful, result)
                 return items
             else:
