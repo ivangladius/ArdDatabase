@@ -684,7 +684,7 @@ class Database:
             f"WHERE category LIKE \"%{category}%\""
         )
 
-        
+        video_numbers = []
         items = []
         if successful:
             if result is not None:
@@ -692,16 +692,19 @@ class Database:
                 if videos is not None:
 
                     total_videos = len(videos)
-                    for i in range(n):  
+                    index = 0
+                    while index < total_videos:
                         rand = random.randint(1, total_videos - 1) 
-                        video = videos[rand] # get random video of the set of all videos
-                        item = Item()
-                        keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
-                        item.set_to_item(video, institution, institution_logo, publisher, child_friendly, keywords)
-                        print(item)
-                        items.append(item)
-                    qclose(successful, result)
-                    return items
+                        if rand not in video_numbers:
+                            video = videos[rand] # get random video of the set of all videos
+                            item = Item()
+                            keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
+                            item.set_to_item(video, institution, institution_logo, publisher, child_friendly, keywords)
+                            print(item)
+                            items.append(item)
+                            index += 1
+                qclose(successful, result)
+                return items
             else:
                 qclose(successful, result)
                 return None
@@ -714,21 +717,24 @@ class Database:
 
         number_videos = self.get_video_total_count()
 
+        video_numbers = []
+
         # get 'n' random videos
         if number_videos > 0:
             items = []
             index = 0
             while index < n:
                 rand = random.randint(1,number_videos)
-                # video is a set
-                video = self.get_video_by_id(rand)
-                if video is not None: 
-                    keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
-                    item = Item()
-                    item.set_to_item(video, institution, institution_logo,
-                                     publisher, child_friendly, keywords)
-                    items.append(item)
-                    index += 1
+                if rand not in video_numbers:
+                    # video is a set
+                    video = self.get_video_by_id(rand)
+                    if video is not None: 
+                        keywords, publisher, institution, institution_logo, child_friendly = self.resolve_foreign_keys(video)
+                        item = Item()
+                        item.set_to_item(video, institution, institution_logo,
+                                         publisher, child_friendly, keywords)
+                        items.append(item)
+                        index += 1
 
             return items
 
